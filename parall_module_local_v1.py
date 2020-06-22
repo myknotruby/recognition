@@ -60,7 +60,7 @@ class ParallModule(BaseModule):
           _module = Module(self._asymbol(args), self._data_names, self._label_names, logger=self.logger,
                           context=mx.gpu(i), work_load_list=self._work_load_list,
                           fixed_param_names=self._fixed_param_names)
-          self._arcface_modules.append(_module)
+          self._arcface_modules.append(_module)  #store multiple local loss head
           _c = args.local_class_start + i*args.ctx_num_classes
           self._ctx_class_start.append(_c)
         self._usekv = False
@@ -230,6 +230,7 @@ class ParallModule(BaseModule):
 
           for i, _module in enumerate(self._arcface_modules):
             _label = self.global_label - self._ctx_class_start[i]
+            #print("_label:", self._ctx_class_start[i], _label)
             db_global_fc1 = io.DataBatch([global_fc1], [_label])
             _module.forward(db_global_fc1) #fc7 with margin
         #print('forward end')
@@ -294,9 +295,12 @@ class ParallModule(BaseModule):
           fc7_prob = self.get_ndarray(_ctx, 'test_fc7_prob', (self._batch_size, self._ctx_num_classes*len(self._context)))
           nd.concat(*_probs, dim=1, out=fc7_prob)
           fc7_pred = nd.argmax(fc7_prob, axis=1)
+          print("fc7_pred.context:", fc7_pred.context)
+
           local_label = self.global_label - self._local_class_start
           #local_label = self.get_ndarray2(_ctx, 'test_label', local_label)
           _pred = nd.equal(fc7_pred, local_label)
+          print("_pred.context:", _pred.context)
           print('{fc7_acc}', self._iter, nd.mean(_pred).asnumpy()[0])
 
 

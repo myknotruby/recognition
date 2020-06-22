@@ -228,7 +228,15 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
       else:
         db = mx.io.DataBatch(data=(_data,_data_extra), label=(_label,))
       model.forward(db, is_train=False)
+
       net_out = model.get_outputs()
+      #Begin Add be zzl
+      cpu_net_out = []
+      for arr in net_out:
+          cpu_net_out.append(arr.copyto(mx.cpu(0)))
+
+      net_out = cpu_net_out
+      #End
       #_arg, _aux = model.get_params()
       #__arg = {}
       #for k,v in _arg.iteritems():
@@ -276,6 +284,8 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
   embeddings = sklearn.preprocessing.normalize(embeddings)
   print(embeddings.shape)
   print('infer time', time_consumed)
+
+
   _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
   acc2, std2 = np.mean(accuracy), np.std(accuracy)
   return acc1, std1, acc2, std2, _xnorm, embeddings_list

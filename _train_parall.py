@@ -17,10 +17,11 @@ import sklearn
 import numpy as np
 from image_iter import FaceImageIter
 import mxnet as mx
+
 from mxnet import ndarray as nd
 import argparse
 import mxnet.optimizer as optimizer
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'common'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '.', 'common'))
 import flops_counter
 from config import config, default, generate_config
 sys.path.append(os.path.join(os.path.dirname(__file__), 'eval'))
@@ -109,6 +110,7 @@ def get_symbol_embedding():
   all_label = mx.symbol.Variable('softmax_label')
   #embedding = mx.symbol.BlockGrad(embedding)
   all_label = mx.symbol.BlockGrad(all_label)
+
   out_list = [embedding, all_label]
   out = mx.symbol.Group(out_list)
   return out
@@ -156,7 +158,7 @@ def get_symbol_arcface(args):
   out = mx.symbol.Group(out_list)
   return out
 
-
+#Filter fc-layers
 def get_finetune_model(symbol, arg_params, aux_params, exclude_layer_prefix):
     _exclude_layer_prefix = exclude_layer_prefix.split(',')
     _arg_params = arg_params
@@ -165,6 +167,7 @@ def get_finetune_model(symbol, arg_params, aux_params, exclude_layer_prefix):
     temp = None
     print('fixed layer without prefix: ', exclude_layer_prefix)
     _fixed_params_names = _arg_params.keys()
+    #print("_aux_params:", _aux_params.keys())
     for x in exclude_layer_prefix.split(','):
         _arg_params = dict({k:_arg_params[k] for k in _arg_params.keys() if x not in k})
         _aux_params = dict({k:_aux_params[k] for k in _aux_params.keys() if x not in k})
@@ -197,6 +200,7 @@ def train_net(args):
     args.ctx_num = len(ctx)
     if args.per_batch_size==0:
       args.per_batch_size = 128
+    print("per_batch_size", args.per_batch_size)
     args.batch_size = args.per_batch_size*args.ctx_num
     args.rescale_threshold = 0
     args.image_channel = config.image_shape[2]
@@ -244,7 +248,7 @@ def train_net(args):
     fixed_param_names = None
     esym = get_symbol_embedding()
     all_layers = esym.get_internals()
-    #print(all_layers)
+
     if len(args.finetune)>0:
       vec = args.finetune.split(',')
       print('finetune loading', vec)
@@ -263,6 +267,7 @@ def train_net(args):
     if config.count_flops:
       all_layers = esym.get_internals()
       _sym = all_layers['fc1_output']
+      #print("all_layers:", all_layers)
       print( image_size )
       FLOPs = flops_counter.count_flops(_sym, data=(1,3,image_size[0],image_size[1]))
       _str = flops_counter.flops_str(FLOPs)
