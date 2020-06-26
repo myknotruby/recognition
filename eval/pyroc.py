@@ -55,7 +55,7 @@ def roc_curve( same_score, diff_score ):
                 idx.append( int(diff_length*(1-1.0/r)) )
                 threshold.append( sorted_diff[int(idx[i])] )
                 new_list = [n for n in same_score if n<threshold[i]]
-                far.append( 1.0 - float(len(new_list))/same_length )
+                far.append( 1.0 - float(len(new_list))/same_length ) #wrong naming, TAR
         far = [ ('%.4f'%v) for v in far ]
         threshold = [ ('%.4f'%v) for v in threshold ]
         #accuracy = roc_accuracy( same_score, diff_score, threshold )

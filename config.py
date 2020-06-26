@@ -24,7 +24,7 @@ config.max_steps = 0
 config.data_rand_mirror = True  #??
 config.data_cutoff = False
 config.data_color = 0
-config.data_images_filter = 0
+config.data_images_filter = 0 #if a person has images less than this value, this person will not put into training data
 config.count_flops = True
 config.memonger = False #not work now
 config.dtype = 'float32'
@@ -254,7 +254,7 @@ default.finetune = ''
 default.dataset = 'emore'
 default.loss = 'arcface'
 default.frequent = 20
-default.verbose = 100   #5000
+default.verbose = 2000   #5000
 default.kvstore = 'device'
 
 default.end_epoch = 10000

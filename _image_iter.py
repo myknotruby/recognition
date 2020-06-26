@@ -34,8 +34,7 @@ class FaceImageIter(io.DataIter):
         super(FaceImageIter, self).__init__()
         assert path_imgrec
         if path_imgrec:
-            logging.info('loading recordio %s...',
-                         path_imgrec)
+            logging.info('loading recordio %s...', path_imgrec)
             path_imgidx = path_imgrec[0:-4]+".idx"
             self.imgrec = recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, 'r')  # pylint: disable=redefined-variable-type
             s = self.imgrec.read_idx(0)
@@ -65,7 +64,7 @@ class FaceImageIter(io.DataIter):
               self.imgidx = list(self.imgrec.keys)
             if shuffle:
               self.seq = self.imgidx
-              self.oseq = self.imgidx
+              self.oseq = self.imgidx #Not used?
               print(len(self.seq))
             else:
               self.seq = None
@@ -100,7 +99,7 @@ class FaceImageIter(io.DataIter):
         self.cur = 0
         if self.shuffle:
           random.shuffle(self.seq)
-          random.shuffle(self.seq)
+          random.shuffle(self.seq)  #twice?
         if self.seq is None and self.imgrec is not None:
             self.imgrec.reset()
 
@@ -120,13 +119,13 @@ class FaceImageIter(io.DataIter):
               s = self.imgrec.read_idx(idx)
               header, img = recordio.unpack(s)
               label = header.label
-              if not isinstance(label, numbers.Number):
+              if not isinstance(label, numbers.Number): #support multi-label
                 label = label[0]
               return label, img, None, None
-            else:
-              label, fname, bbox, landmark = self.imglist[idx]
+            else: #error branch
+              label, fname, bbox, landmark = self.imglist[idx] #not defined imglist
               return label, self.read_image(fname), bbox, landmark
-        else:
+        else: #not shuffle
             s = self.imgrec.read()
             if s is None:
                 raise StopIteration
@@ -184,6 +183,7 @@ class FaceImageIter(io.DataIter):
           img[:,:,c] = np.fliplr(img[:,:,c])
       return img
 
+    #lossful compression, then uncompress
     def compress_aug(self, img):
       buf = BytesIO()
       img = Image.fromarray(img.asnumpy(), 'RGB')
@@ -209,7 +209,7 @@ class FaceImageIter(io.DataIter):
         i = 0
         try:
             while i < batch_size:
-                label, s, bbox, landmark = self.next_sample()
+                label, s, bbox, landmark = self.next_sample() #bbox, landmark are always None
                 _data = self.imdecode(s)
                 if _data.shape[0]!=self.data_shape[1]:
                   _data = mx.image.resize_short(_data, self.data_shape[1])
@@ -234,20 +234,20 @@ class FaceImageIter(io.DataIter):
                 if self.nd_mean is not None:
                   _data = _data.astype('float32', copy=False)
                   _data -= self.nd_mean
-                  _data *= 0.0078125
+                  _data *= 0.0078125   #1/128
                 if self.cutoff>0:
                   _rd = random.randint(0,1)
                   if _rd==1:
                     #print('do cutoff aug', self.cutoff)
                     centerh = random.randint(0, _data.shape[0]-1)
                     centerw = random.randint(0, _data.shape[1]-1)
-                    half = self.cutoff//2
+                    half = self.cutoff//2 #cutoff is cut size in pixel
                     starth = max(0, centerh-half)
                     endh = min(_data.shape[0], centerh+half)
                     startw = max(0, centerw-half)
                     endw = min(_data.shape[1], centerw+half)
                     #print(starth, endh, startw, endw, _data.shape)
-                    _data[starth:endh, startw:endw, :] = 128
+                    _data[starth:endh, startw:endw, :] = 128  #fill with white
                 data = [_data]
                 try:
                     self.check_valid_image(data)
@@ -306,7 +306,7 @@ class FaceImageIter(io.DataIter):
 
     def postprocess_data(self, datum):
         """Final postprocessing step before image is loaded into the batch."""
-        return nd.transpose(datum, axes=(2, 0, 1))
+        return nd.transpose(datum, axes=(2, 0, 1))  #chw
 
 class FaceImageIterList(io.DataIter):
   def __init__(self, iter_list):

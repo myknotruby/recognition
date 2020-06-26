@@ -56,7 +56,8 @@ class LFold:
     else:
       return [(indices, indices)]
 
-
+#thresholds: np.arange(0, 4, 0.01)
+#Return:  tpr, fpr @thresholds, best_accuracy of ten-fold
 def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_folds=10, pca = 0):
     assert(embeddings1.shape[0] == embeddings2.shape[0])
     assert(embeddings1.shape[1] == embeddings2.shape[1])
@@ -119,8 +120,7 @@ def calculate_accuracy(threshold, dist, actual_issame):
     acc = float(tp+tn)/dist.size
     return tpr, fpr, acc
 
-
-  
+#Return: TAR, FAR, TAR_std_var
 def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10):
     assert(embeddings1.shape[0] == embeddings2.shape[0])
     assert(embeddings1.shape[1] == embeddings2.shape[1])
@@ -154,7 +154,8 @@ def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_targe
     val_std = np.std(val)
     return val_mean, val_std, far_mean
 
-
+#Return: True Accept Rate, False Accept Rate
+#val means TAR
 def calculate_val_far(threshold, dist, actual_issame):
     predict_issame = np.less(dist, threshold)
     true_accept = np.sum(np.logical_and(predict_issame, actual_issame))
@@ -213,14 +214,14 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
     _label = nd.ones( (batch_size,) )
   else:
     _label = nd.ones( label_shape )
-  for i in xrange( len(data_list) ):
+  for i in xrange( len(data_list) ): #nonflip, flip, sharing  issame_list
     data = data_list[i]
     embeddings = None
     ba = 0
     while ba<data.shape[0]:
       bb = min(ba+batch_size, data.shape[0])
       count = bb-ba
-      _data = nd.slice_axis(data, axis=0, begin=bb-batch_size, end=bb)
+      _data = nd.slice_axis(data, axis=0, begin=bb-batch_size, end=bb) #the last slice pad some used examples at the beginning
       #print(_data.shape, _label.shape)
       time0 = datetime.datetime.now()
       if data_extra is None:
@@ -228,15 +229,8 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
       else:
         db = mx.io.DataBatch(data=(_data,_data_extra), label=(_label,))
       model.forward(db, is_train=False)
-
       net_out = model.get_outputs()
-      #Begin Add be zzl
-      cpu_net_out = []
-      for arr in net_out:
-          cpu_net_out.append(arr.copyto(mx.cpu(0)))
 
-      net_out = cpu_net_out
-      #End
       #_arg, _aux = model.get_params()
       #__arg = {}
       #for k,v in _arg.iteritems():
@@ -262,11 +256,16 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
 
   _xnorm = 0.0
   _xnorm_cnt = 0
-  for embed in embeddings_list:
+  for embed in embeddings_list:  #noflip, flip
     for i in xrange(embed.shape[0]):
       _em = embed[i]
       _norm=np.linalg.norm(_em)
       #print(_em.shape, _norm)
+      if math.isinf(_norm):
+          print("Embedding contains Infinity!!!")
+      elif _norm == 0:
+          print("Norm is zero!!!")
+
       _xnorm+=_norm
       _xnorm_cnt+=1
   _xnorm /= _xnorm_cnt
@@ -275,18 +274,17 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
   embeddings = sklearn.preprocessing.normalize(embeddings)
   acc1 = 0.0
   std1 = 0.0
-  #_, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=10)
-  #acc1, std1 = np.mean(accuracy), np.std(accuracy)
+  _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=10)
+  acc1, std1 = np.mean(accuracy), np.std(accuracy)
 
-  #print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
+  print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
   #embeddings = np.concatenate(embeddings_list, axis=1)
-  embeddings = embeddings_list[0] + embeddings_list[1]
+  embeddings = embeddings_list[0] + embeddings_list[1] #means concat along axis 0
   embeddings = sklearn.preprocessing.normalize(embeddings)
   print(embeddings.shape)
   print('infer time', time_consumed)
 
-
-  _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
+  #_, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
   acc2, std2 = np.mean(accuracy), np.std(accuracy)
   return acc1, std1, acc2, std2, _xnorm, embeddings_list
 

@@ -54,6 +54,8 @@ class ParallModule(BaseModule):
         self._arcface_modules = []
         self._ctx_class_start = []
         self._fixed_param_names = None
+
+
         for i in range(len(self._context)):
 
           args._ctxid = i
@@ -63,10 +65,13 @@ class ParallModule(BaseModule):
           self._arcface_modules.append(_module)  #store multiple local loss head
           _c = args.local_class_start + i*args.ctx_num_classes
           self._ctx_class_start.append(_c)
+
         self._usekv = False
         if self._usekv:
           self._distkv = mx.kvstore.create('dist_sync')
           self._kvinit = {}
+
+
 
 
     def _reset_bind(self):
@@ -149,12 +154,14 @@ class ParallModule(BaseModule):
         self._curr_module.init_params(initializer=initializer, arg_params=arg_params,
                                       aux_params=aux_params, allow_missing=allow_missing,
                                       force_init=force_init, allow_extra=allow_extra)
+
         for _module in self._arcface_modules:
           #_initializer = initializer
           _initializer = mx.init.Normal(0.01)
           _module.init_params(initializer=_initializer, arg_params=arg_params,
                                         aux_params=aux_params, allow_missing=allow_missing,
                                         force_init=force_init, allow_extra=allow_extra)
+
         self.params_initialized = True
 
 
@@ -295,12 +302,10 @@ class ParallModule(BaseModule):
           fc7_prob = self.get_ndarray(_ctx, 'test_fc7_prob', (self._batch_size, self._ctx_num_classes*len(self._context)))
           nd.concat(*_probs, dim=1, out=fc7_prob)
           fc7_pred = nd.argmax(fc7_prob, axis=1)
-          print("fc7_pred.context:", fc7_pred.context)
 
           local_label = self.global_label - self._local_class_start
           #local_label = self.get_ndarray2(_ctx, 'test_label', local_label)
           _pred = nd.equal(fc7_pred, local_label)
-          print("_pred.context:", _pred.context)
           print('{fc7_acc}', self._iter, nd.mean(_pred).asnumpy()[0])
 
 

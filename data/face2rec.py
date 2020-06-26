@@ -93,7 +93,7 @@ def image_encode(args, i, item, q_out):
             img = fin.read()
         s = mx.recordio.pack(header, img)
         q_out.put((i, s, oitem))
-      else:
+      else:#when face are aliged
         img = cv2.imread(fullpath, args.color)
         assert item.landmark is not None
         img = face_preprocess.preprocess(img, bbox = item.bbox, landmark=item.landmark, image_size='%d,%d'%(args.image_h, args.image_w))

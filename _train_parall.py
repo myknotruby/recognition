@@ -239,7 +239,7 @@ def train_net(args):
     print('Called with argument:', args, config)
     mean = None
 
-    begin_epoch = 0
+    begin_epoch = 1
     base_lr = args.lr
     base_wd = args.wd
     base_mom = args.mom
@@ -291,6 +291,8 @@ def train_net(args):
         args = args,
         fixed_param_names = fixed_param_names,
     )
+
+
     val_dataiter = None
     train_dataiter = FaceImageIter(
         batch_size           = args.batch_size,
