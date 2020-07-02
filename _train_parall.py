@@ -363,13 +363,20 @@ def train_net(args):
       save_step[0] = int(vec[1])
       global_step[0] = save_step[0] * args.verbose
 
-    #lr_steps = [int(x) for x in args.lr_steps.split(',')]
+    list_steps = [int(x) for x in args.lr_steps.split(',')]
+    step_lr = float(args.lr)
+    lr_steps = {}
+    for s in list_steps:
+      step_lr /= 10.0
+      lr_steps[s] = step_lr
+
     #lr_steps = {70000:0.1, 140000:0.01, 350000:0.001, 490000:0.0001}  ##ela
     #lr_steps = {10000:0.1, 180000:0.01, 300000:0.001, 360000:0.0001}  ##emore
     #lr_steps = {140000:0.001, 300000:0.0001}  ##emore+pretrain, lr=0.01
     #lr_steps = {40000:0.01, 90000:0.001, 130000:0.0001}  ##emore+pretrain, lr=0.001
-    lr_steps = {30000:0.01, 60000:0.001, 90000:0.0001}  ##emore+pretrain, lr=0.001
+    #lr_steps = {30000:0.01, 60000:0.001, 90000:0.0001}  ##emore+pretrain, lr=0.001
     #lr_steps = {80000:0.0001}  ##emore+pretrain, lr=0.001
+
     print('lr_steps', lr_steps)
     def _batch_callback(param):
       #global global_step
